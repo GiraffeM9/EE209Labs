@@ -15,6 +15,10 @@ bool check_prime(uint16_t chk_no);
 
 
 bool check_prime(uint16_t chk_no){
+	if (chk_no < 2){
+		return false;
+	}
+	
 	for(uint16_t i=2; i < chk_no; i++){
 		if ((chk_no % i) == 0){
 			return false;
@@ -78,12 +82,12 @@ void usart_transmit_number(uint16_t number)
 
 int main(void)
 {
-	// initialization
+	// initialise USART
 	usart_init(12);
-	uint16_t number = 345;
 	
-	uint16_t count = 1;
-	uint16_t myPrimes[63] = {1};
+	// create an array of prime numbers
+	uint16_t count = 0;
+	uint16_t myPrimes[62];
 	
 	for (uint16_t num=2; num<=300; num++){
 		if (check_prime(num)){
@@ -95,10 +99,16 @@ int main(void)
 	
     while (1) 
     {
-		// sends character "345" every 0.5s
-		_delay_ms(500);
-		usart_transmit_number(number);
-		usart_transmit(32); // space
-    }
+		// 3) for loop through the primes array
+		for (uint16_t i = 0; i < count; i++)
+		{
+			usart_transmit_number(myPrimes[i]);  // a) + b) extract & send digits
+
+			usart_transmit(',');                  // c) comma
+			usart_transmit(' ');                  // c) space
+			// d) i is incremented automatically by the for loop
+		}
+		_delay_ms(500);  // pause once the full list has been sent, if desired
+	}
 }
 
