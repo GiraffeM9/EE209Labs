@@ -47,7 +47,8 @@ int main(void)
 			usart_transmit_number(myPrimes[i]);
 			usart_transmit(',');
 			usart_transmit(' ');
+			_delay_ms(500);
 		}
-		_delay_ms(500);
+		
 	}
 }
