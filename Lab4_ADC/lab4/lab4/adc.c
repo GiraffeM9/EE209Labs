@@ -28,3 +28,8 @@ uint16_t adc_read(uint8_t channel){
 	
 	return (high << 8) | low; // Returns ADC value
 }
+
+uint16_t adc_convert_mv(uint16_t adc_value){
+	uint32_t mv = ((uint32_t)adc_value * 5000)/1024; // Converts ADC value to original voltage value in millivolts
+	return mv;
+}
