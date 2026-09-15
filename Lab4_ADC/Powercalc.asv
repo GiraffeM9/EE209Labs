@@ -1,0 +1,87 @@
+%{
+Title: ELECTENG 209 Power Calculation - Using Real Excel ADC Data
+Adapted from: Jackman Lin and Patrick Lawton's original DSP script
+
+This version reads actual ADC0/ADC1 mV values (from Q4.5's Excel data) directly from
+a spreadsheet, then compares:
+  Method 1: power calc without aligning ADC values 
+  Method 2: linear approximation realigned power calc 
+%}
+close all
+clear
+clc
+
+%% ---- Step 1: Load your real data from Excel ----
+filename = 'lab4.xlsx';
+data = readmatrix(filename);
+
+VADCValue_mV = data(:,1);   % ADC0 samples, in mV, N samples
+AADCValue_mV = data(:,2);   % ADC1 samples, in mV, N samples 
+
+N = length(VADCValue_mV);   % number of samples
+
+%% ---- Step 2: Remove the DC offset to get the true AC signal ----
+Voff = 2500; % mV
+
+V_AC = VADCValue_mV - Voff;   % voltage samples, offset removed (mV)
+I_L  = AADCValue_mV - Voff;   % current samples, offset removed (mV)
+
+%% ---- Step 3: Calculate the theoretical ("actual") power ----
+Vamplitude = 2000;      % mV (peak)
+Iamplitude = 1000;      % mV (peak)
+phaseshift = 30/180*pi; % 30 degree phase lag, in radians
+
+Vrms = Vamplitude/sqrt(2);
+Irms = Iamplitude/sqrt(2);
+P_actual = Vrms*Irms*cos(phaseshift)/1000 % convert mV*mV -> W (divide by 1000)
+
+%% ---- Step 4: Method 1 - power calc WITHOUT aligning ADC values ----
+% Directly multiplies each V_AC[i] sample with the I_L[i] sample taken
+% right after it, ignoring the small time delay between them.
+P_unaligned_samples = V_AC .* I_L / 1000000; % convert mV*mV -> W
+P_predicted = mean(P_unaligned_samples)
+error_percent_unaligned = abs((P_actual - P_predicted)/P_actual*100)
+
+%% ---- Step 5: Method 2 - linear approximation realignment ----
+% For each V_AC[i], estimate what I_L would have been at that exact
+% same instant by averaging the two adjacent raw I_L samples.
+I_L_realigned = zeros(N,1);
+for i = 1:N
+    if i == 1
+        % wrap around to the last sample for the first point
+        I_L_realigned(i) = (I_L(N) + I_L(1))/2;
+    else
+        I_L_realigned(i) = (I_L(i-1) + I_L(i))/2;
+    end
+end
+
+P_corrected_samples = V_AC .* I_L_realigned / 1000000; % convert mV*mV -> W
+P_predicted_corrected = mean(P_corrected_samples)
+error_percent_corrected = abs((P_actual - P_predicted_corrected)/P_actual*100)
+
+%% ---- Step 6: Plot to visually compare ----
+figure('Name','Voltage and Current Samples')
+plot(1:N, V_AC, 'o-','DisplayName','V\_AC (voltage, offset removed)')
+hold on
+plot(1:N, I_L, 'x-','DisplayName','I\_L (current, offset removed)')
+xlabel('Sample number')
+ylabel('Amplitude (mV)')
+title('Real ADC Data from Excel')
+grid on
+legend
+
+figure('Name','Power Comparison')
+plot(1:N, P_unaligned_samples, 'o-','DisplayName','Method 1: Without Alignment')
+hold on
+plot(1:N, P_corrected_samples, 'x-','DisplayName','Method 2: Linear Approx')
+yline(P_actual, '--', 'DisplayName', 'Theoretical Average Power')
+xlabel('Sample number')
+ylabel('Instantaneous Power (W)')
+title('Without Alignment vs Linear Approximation Power Calculation')
+grid on
+legend
+
+fprintf('\n--- Summary ---\n')
+fprintf('Theoretical power:        %.4f W\n', P_actual)
+fprintf('Method 1 (without alignment): %.4f W  (%.2f%% error)\n', P_predicted, error_percent_unaligned)
+fprintf('Method 2 (linear approx): %.4f W  (%.2f%% error)\n', P_predicted_corrected, error_percent_corrected)
