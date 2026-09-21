@@ -11,17 +11,16 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-void timer0_init(){
-	TCCR0A |= (1 << WGM01);
-	TCCR0B |= (1 << CS02);
-	OCR0A = 0b01001101; // 77 for 10ms
+volatile uint16_t timer0_ms_count = 0;
+
+ISR(TIMER0_COMPA_vect) {
+	led_toggle();
 }
 
-uint8_t timer0_check_clear_compare(){
-	if( TIFR0 & (1 << OCF0A) ){ 
-		TIFR0 |= (1 << OCF0A);
-		//Note: in datasheet this is done by writing 1 to the compare flag
-		return 1;
-	}
-	return 0;
+void timer0_init(){
+	TCCR0A |= (1 << WGM01); // CTC mode
+	TCCR0B |= (1 << CS02); // Prescaler = 256
+	OCR0A = 77; // (77+1)*256/2MHz = 9.984ms
+	TIMSK0 = (1 << OCIE0A); // Timer/Counter0 compare match A interrupt is enabled
 }
+
