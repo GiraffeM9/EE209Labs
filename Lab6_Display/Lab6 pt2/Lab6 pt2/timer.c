@@ -14,7 +14,7 @@
 void timer0_init(void){
 	TCCR0A = (1 << WGM01);      // CTC mode
 	TCCR0B = (1 << CS02);       // Prescaler 256
-	OCR0A = 33;                 // Roughly 50 Hz
+	OCR0A = 38;                 // 50 Hz on each display: OCR0A = f_cpu/(256 * 200Hz) - 1 
 	TIMSK0 = (1 << OCIE0A);     // Compare match A interrupt
 }
 
